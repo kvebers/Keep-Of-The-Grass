@@ -64,6 +64,7 @@ class Player
         Data data = new Data();
         //int[,] solve_map2 = new int[width, height]; Potential for the future AI bot
         int turn_counter = 0;
+        int check_squeres = 5;
         data.mid_h = height / 2;
         data.mid_w = width / 2;
         // game loop
@@ -137,6 +138,8 @@ class Player
                         Algo[x,y].solve_map = 0;
                     else if (map[x,y].owner == 1)
                         Algo[x,y].solve_map = 1;
+                    else if(turn_counter > 70 && map[x,y].owner == -1)
+                        Algo[x,y].solve_map = 10;
                     else if (map[x,y].owner == 0)
                         Algo[x,y].solve_map = 6;
                     else if (map[x,y].owner == -1)
@@ -147,24 +150,29 @@ class Player
                     else 
                         Algo[x,y].turn_to_maze = 1;
                     // Gives priority to an X Cordinate in a squere
-                    if (x > data.mid_w - 2 && x < data.mid_w + 2)
-                        priorityx = 4;
-                    else if (x > data.mid_w - 4 && x < data.mid_w + 4)
-                        priorityx = 3;
-                    else if (x > data.mid_w - 5 && x < data.mid_w + 5)
-                        priorityx = 2;
+                    if (turn_counter < 15)
+                        if (x > data.mid_w - 2 && x < data.mid_w + 2)
+                            priorityx = 6;
+                        else if (x > data.mid_w - 4 && x < data.mid_w + 4)
+                            priorityx = 5;
+                        else if (x > data.mid_w - 5 && x < data.mid_w + 5)
+                            priorityx = 4;
+                        else 
+                            priorityx = 3;
                     else 
-                        priorityx = 1;
+                        priorityx = 3;
+
 
                     // Gives a Priority to Y Cordinates
                     if (y > data.mid_h - 3 && x < data.mid_w + 3)
-                        priorityy = 5;
+                        priorityy = 4;
                     else if (x > data.mid_w - 5 && x < data.mid_h + 5)
                         priorityy = 4;
                     else if (x > data.mid_w - 9 && x < data.mid_h + 9)
                         priorityy = 3;
                     else 
                         priorityy = 4;
+    
                     Algo[x,y].calculate_priority = Algo[x,y].solve_map * (priorityx * priorityy);
                         //Need to add value to the Squere
                     Algo algo = new Algo
@@ -217,8 +225,82 @@ class Player
                 y++;
             }
         int count = 0;
+        Console.Error.WriteLine(turn_counter);
+        if  (width * height < 100 && turn_counter < 3)
+        {
 
-        while (myMatter > 20)
+        }
+        else if (width * height < 200 && turn_counter == 1)
+        {
+            int tempOut = 0;
+            int best = 0;
+            int cnt = 0;
+            foreach (Algo prioTiles in Squeres)
+            {
+                if (prioTiles.canBuild == 1)
+                {
+                    if (prioTiles.scrapAmount > tempOut && prioTiles.x > 1 && prioTiles.y > 1 && prioTiles.x < width - 1 && prioTiles.y < height - 1)
+                    {
+                        tempOut = prioTiles.scrapAmount;
+                        best = cnt;
+                    }
+                }
+                cnt++;
+            }
+            Algo winner = Squeres[best];
+            Console.Write("BUILD {0} {1};",winner.x, winner.y);
+        }
+        else if (width * height > 180 && (turn_counter == 0 || turn_counter == 2))
+        {
+            int tempOut = 0;
+            int best = 0;
+            int cnt = 0;
+            foreach (Algo prioTiles in Squeres)
+            {
+                if (prioTiles.canBuild == 1)
+                {
+                    if (prioTiles.scrapAmount > tempOut && prioTiles.x > 1 && prioTiles.y > 1 && prioTiles.x < width - 1 && prioTiles.y < height - 1)
+                    {
+                        tempOut = prioTiles.scrapAmount;
+                        best = cnt;
+                    }
+                }
+                cnt++;
+            }
+            Algo winner = Squeres[best];
+            Console.Write("BUILD {0} {1};",winner.x, winner.y);
+        }
+
+        foreach (Algo prioTiles in Squeres)
+        {
+            if (prioTiles.x - 1 > 0 && prioTiles.x + 1 < width && prioTiles.y - 1 > 0 && prioTiles.y + 1 < height)
+            {
+                if(prioTiles.canBuild == 1)
+                {
+                    if(map[prioTiles.x + 1, prioTiles.y].units > 0 && map[prioTiles.x + 1, prioTiles.y].owner == 0)
+                    {
+                        Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                    }
+                    else if (map[prioTiles.x - 1, prioTiles.y].units > 0 && map[prioTiles.x - 1, prioTiles.y].owner == 0)
+                    {
+                        Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                    }
+ //                   else if (map[prioTiles.x, prioTiles.y + 1].units > 0 && map[prioTiles.x, prioTiles.y + 1].owner == 0)
+                    // {
+                    //     Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                    // }
+                    // else if (map[prioTiles.x, prioTiles.y - 1].units > 0 && map[prioTiles.x, prioTiles.y - 1].owner == 0)
+                    // {
+                    //     Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                    // }
+                }
+            }
+        }
+
+        if (turn_counter > 50)
+            check_squeres = 3;
+
+        while (myMatter >= 10)
         {
             int tempPrio = 0;
             int best = 0;
@@ -229,9 +311,11 @@ class Player
                 {
                     if (prioTiles.calculate_priority > tempPrio)
                     {
-                        
-                        tempPrio = prioTiles.calculate_priority;
-                        best = cnt;
+                        if (map[prioTiles.x, prioTiles.y].units < 3)
+                        {
+                            tempPrio = prioTiles.calculate_priority;
+                            best = cnt;
+                        }
                     }
                 }
                 cnt++;
@@ -241,7 +325,6 @@ class Player
             Console.Write("SPAWN {0} {1} {2};", 1, winner.x, winner.y);
             myMatter = myMatter - 10;
         }
-
 
         foreach (Robot playerBot in playerRobots)
         {
@@ -255,7 +338,7 @@ class Player
                 x = 0;
                 while (x < width)
                 {
-                    if(Math.Abs(playerBot.x - x) + Math.Abs(playerBot.y - y) <= 5)
+                    if(Math.Abs(playerBot.x - x) + Math.Abs(playerBot.y - y) <= check_squeres)
                     {
                        if(map[x,y].units - 1 <= map[playerBot.x,playerBot.y].units)
                        {
@@ -280,14 +363,12 @@ class Player
             else if (count % 2 == 0)
             {
                 Console.Write("MOVE {0} {1} {2} {3} {4};", 1, playerBot.x, playerBot.y, x_1, y_1);
-                Algo[x_1,y_1].calculate_priority = Algo[x_1,y_1].calculate_priority - 20;
-                Console.Error.WriteLine(Algo[x_1,y_1].calculate_priority);
+                Algo[x_1,y_1].calculate_priority = Algo[x_1,y_1].calculate_priority - 30;
             }
             else
             {
                 Console.Write("MOVE {0} {1} {2} {3} {4};", 1, playerBot.x, playerBot.y, x_2, y_2);
-                Algo[x_1,y_1].calculate_priority = Algo[x_1,y_1].calculate_priority - 20;
-                Console.Error.WriteLine(Algo[x_1,y_1].calculate_priority);
+                Algo[x_1,y_1].calculate_priority = Algo[x_1,y_1].calculate_priority - 30;
             }
 
         //}
