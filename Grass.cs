@@ -33,6 +33,7 @@ struct Algo
     public int canBuild;
     public int canSpawn;
     public int inRangeOfRecycler;
+    public int spawnPriority;
     public int x;
     public int y;
     
@@ -62,6 +63,7 @@ class Player
         Tile[,] map = new Tile[width, height];
         Algo[,] Algo = new Algo[width, height];
         Data data = new Data();
+        int my_recyclers = 0;
         //int[,] solve_map2 = new int[width, height]; Potential for the future AI bot
         int turn_counter = 0;
         int check_squeres = 5;
@@ -162,18 +164,50 @@ class Player
                     else 
                         priorityx = 3;
 
-
+                    if (turn_counter < 15)
+                    {
                     // Gives a Priority to Y Cordinates
                     if (y > data.mid_h - 3 && x < data.mid_w + 3)
-                        priorityy = 4;
+                        priorityy = 5;
                     else if (x > data.mid_w - 5 && x < data.mid_h + 5)
-                        priorityy = 4;
+                        priorityy = 2;
                     else if (x > data.mid_w - 9 && x < data.mid_h + 9)
-                        priorityy = 3;
+                        priorityy = 2;
                     else 
-                        priorityy = 4;
-    
+                        priorityy = 5;
+                    }
+                    else 
+                    {
+                        priorityy = 3;
+                    }
+
+                    if (map[x,y].owner == 1 && map[x,y].recycler == 1)
+                        my_recyclers++;
                     Algo[x,y].calculate_priority = Algo[x,y].solve_map * (priorityx * priorityy);
+
+                    int spaw_priority = Algo[x,y].calculate_priority;
+                    if(x - 1 >= 0)
+                        spaw_priority = spaw_priority + Algo[x - 1, y].calculate_priority;
+                    if(x + 1 < width)
+                        spaw_priority = spaw_priority + Algo[x + 1, y].calculate_priority;
+                    if(y - 1 >= 0)
+                        spaw_priority = spaw_priority + Algo[x, y - 1].calculate_priority;
+                    if(y + 1 < height)
+                        spaw_priority = spaw_priority + Algo[x, y + 1].calculate_priority;
+                    if(x - 1 >= 0 && y - 1 >= 0)
+                        spaw_priority = spaw_priority + Algo[x - 1, y -1].calculate_priority;
+                    if(y + 1 < height && x - 1 >= 0)
+                        spaw_priority = spaw_priority + Algo[x - 1, y + 1].calculate_priority;
+                    if(x + 1 < width && y + 1 < height)
+                        spaw_priority = spaw_priority + Algo[x + 1,y + 1].calculate_priority;
+                    if(y - 1 >= 0 && x + 1 < width)
+                        spaw_priority = spaw_priority + Algo[x + 1, y - 1].calculate_priority;
+
+                    Console.Error.WriteLine("The x and y {0} {1}", x, y );
+
+
+
+                    Algo[x,y].spawnPriority = spaw_priority;
                         //Need to add value to the Squere
                     Algo algo = new Algo
                     {
@@ -189,7 +223,8 @@ class Player
                         canSpawn = map[x,y].canSpawn,
                         inRangeOfRecycler = map[x,y].inRangeOfRecycler,
                         x = x,
-                        y = y
+                        y = y,
+                        spawnPriority = spaw_priority
                     };
                     // Create a new Robot object with the values for this robot
                     Squeres.Add(algo);
@@ -225,7 +260,6 @@ class Player
                 y++;
             }
         int count = 0;
-        Console.Error.WriteLine(turn_counter);
         if  (width * height < 100 && turn_counter < 3)
         {
 
@@ -270,37 +304,46 @@ class Player
             Algo winner = Squeres[best];
             Console.Write("BUILD {0} {1};",winner.x, winner.y);
         }
-
-        foreach (Algo prioTiles in Squeres)
-        {
-            if (prioTiles.x - 1 > 0 && prioTiles.x + 1 < width && prioTiles.y - 1 > 0 && prioTiles.y + 1 < height)
+  //      Console.Error.WriteLine(my_recyclers);
+   //     if (my_recyclers < 3)
+   //     {
+            foreach (Algo prioTiles in Squeres)
             {
-                if(prioTiles.canBuild == 1)
+                if (prioTiles.x - 1 > 0 && prioTiles.x + 1 < width && prioTiles.y - 1 >= 0 && prioTiles.y + 1 < height && prioTiles.inRangeOfRecycler == 0)
                 {
-                    if(map[prioTiles.x + 1, prioTiles.y].units > 0 && map[prioTiles.x + 1, prioTiles.y].owner == 0)
-                    {
-                        Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
-                    }
-                    else if (map[prioTiles.x - 1, prioTiles.y].units > 0 && map[prioTiles.x - 1, prioTiles.y].owner == 0)
-                    {
-                        Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
-                    }
- //                   else if (map[prioTiles.x, prioTiles.y + 1].units > 0 && map[prioTiles.x, prioTiles.y + 1].owner == 0)
-                    // {
-                    //     Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
-                    // }
-                    // else if (map[prioTiles.x, prioTiles.y - 1].units > 0 && map[prioTiles.x, prioTiles.y - 1].owner == 0)
-                    // {
-                    //     Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
-                    // }
+                        if(prioTiles.canBuild == 1)
+                            {
+                            if(map[prioTiles.x + 1, prioTiles.y].units >= 0 && map[prioTiles.x + 1, prioTiles.y].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                                my_recyclers++;
+                            }
+                            else if (map[prioTiles.x - 1, prioTiles.y].units >= 0 && map[prioTiles.x - 1, prioTiles.y].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                                my_recyclers++;
+                            }
+                             else if (map[prioTiles.x, prioTiles.y + 1].units > 0 && map[prioTiles.x, prioTiles.y + 1].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                            }
+                            else if (map[prioTiles.x, prioTiles.y - 1].units > 0 && map[prioTiles.x, prioTiles.y - 1].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                            }
+                        }
                 }
             }
-        }
-
+     //   }
+// This is the part that Spawn Bots
         if (turn_counter > 50)
             check_squeres = 3;
 
-        while (myMatter >= 10)
+        while (myMatter > 20)
         {
             int tempPrio = 0;
             int best = 0;
@@ -309,11 +352,11 @@ class Player
             {
                 if (prioTiles.canSpawn == 1)
                 {
-                    if (prioTiles.calculate_priority > tempPrio)
+                    if (prioTiles.spawnPriority > tempPrio)
                     {
                         if (map[prioTiles.x, prioTiles.y].units < 3)
                         {
-                            tempPrio = prioTiles.calculate_priority;
+                            tempPrio = prioTiles.spawnPriority;
                             best = cnt;
                         }
                     }
@@ -321,10 +364,43 @@ class Player
                 cnt++;
             }
             Algo winner = Squeres[best];
-            winner.calculate_priority = winner.calculate_priority - 10;
+            winner.spawnPriority = winner.spawnPriority - 10;
             Console.Write("SPAWN {0} {1} {2};", 1, winner.x, winner.y);
             myMatter = myMatter - 10;
         }
+// THis is the part that builds spawners
+
+        foreach (Algo prioTiles in Squeres)
+            {
+                if (prioTiles.x - 1 > 0 && prioTiles.x + 1 < width && prioTiles.y - 1 >= 0 && prioTiles.y + 1 < height && prioTiles.inRangeOfRecycler == 0)
+                {
+                        if(prioTiles.canBuild == 1)
+                            {
+                            if(map[prioTiles.x + 1, prioTiles.y].units >= 0 && map[prioTiles.x + 1, prioTiles.y].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                                my_recyclers++;
+                            }
+                            else if (map[prioTiles.x - 1, prioTiles.y].units >= 0 && map[prioTiles.x - 1, prioTiles.y].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                                my_recyclers++;
+                            }
+                             else if (map[prioTiles.x, prioTiles.y + 1].units > 0 && map[prioTiles.x, prioTiles.y + 1].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                            }
+                            else if (map[prioTiles.x, prioTiles.y - 1].units > 0 && map[prioTiles.x, prioTiles.y - 1].owner == 0)
+                            {
+                                Console.Write("BUILD {0} {1};",prioTiles.x, prioTiles.y);
+                                myMatter = myMatter - 10;
+                            }
+                        }
+                }
+            }
 
         foreach (Robot playerBot in playerRobots)
         {
@@ -384,3 +460,4 @@ class Player
 }
 // Write an action using Console.WriteLine()
 // To debug: Console.Error.WriteLine("Debug messages...");
+
